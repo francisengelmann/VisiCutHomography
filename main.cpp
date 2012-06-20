@@ -7,6 +7,7 @@
 //
 
 #include <iostream>
+#include <assert.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
@@ -22,7 +23,7 @@ std::vector<Vec3f> markers;
 
 int main(int argc, const char * argv[]){
   //std::cout << getBuildInformation();
-  //VideoCapture cap(0);
+  VideoCapture cap(0);
   Mat inputImage;
   Mat gray;
   Mat gray2;
@@ -34,46 +35,56 @@ int main(int argc, const char * argv[]){
   std::vector<Point2f> srcPoints;
   std::vector<Point2f> dstPoints;
   
-  float x = 10;
-  float y = 50;
-  float width = 63*25;
-  float height = 30*25;
+  float x = 150;
+  float y = 180;
+  float width = 63*20;
+  float height = 30*20;
   Point2f p1 = Point2f(x,y);
   Point2f p2 = Point2f(x+width,y);
   Point2f p3 = Point2f(x,y+height);
   Point2f p4 = Point2f(x+width,y+height);
   
-  dstPoints.push_back(p1);
   dstPoints.push_back(p2);
-  dstPoints.push_back(p3);  
+  dstPoints.push_back(p1);
   dstPoints.push_back(p4);
+  dstPoints.push_back(p3);  
   
   for(;;){
     srcPoints.clear();
-    //cap >> inputImage;
-    inputImage = imread("photo3.jpg");
+    markers.clear();
+    cap >> inputImage;
+    //inputImage = imread("photo3.jpg");
     flip(inputImage, inputImage, 1);
     if(!inputImage.data){
-      std::cout << "no image read" << std::endl;
+      std::cout << "No image read from camera! Is it connected/available? Exiting." << std::endl;
+      exit(0);
     }else{
       std::cout << inputImage.size().width << "x" << inputImage.size().height << std::endl;
     }
     
-    Point roiOrigin1 = Point(0,60);
-    Mat roi1 = inputImage(Rect(0,60,200,200));
-    rectangle(inputImage, Point(0,60), Point(200,260), Scalar(0,255,0), 2);
+    //resize the camera image to the expected size
+    //if smaller image is provided by lets say an unexpected webcam,
+    //it would crash when trying to access pixels from out of range
+    if(inputImage.size().width!=1620 || inputImage.size().height!=1080){
+      std::cout << "Resizing because input image does not match the expected size!" <<endl<< "Maybe wrong camera attached?" << endl;
+      resize(inputImage, inputImage, Size(1620,1080), 0, 0, INTER_LINEAR);
+    }
     
-    Point roiOrigin2 = Point(1420,60);
-    Mat roi2 = inputImage(Rect(1420,60,200,200));
-    rectangle(inputImage, Point(1420,60), Point(1620,260), Scalar(0,255,0), 2);
+    Point roiOrigin1 = Point(100,160);
+    Mat roi1 = inputImage(Rect(100,160,200,200));
+    rectangle(inputImage, Point(100,160), Point(300,360), Scalar(0,255,0), 2);
     
-    Point roiOrigin3 = Point(30,700);
-    Mat roi3 = inputImage(Rect(30,700,200,200));
-    rectangle(inputImage, Point(30,700), Point(230,900), Scalar(0,255,0), 2);
+    Point roiOrigin2 = Point(1320,160);
+    Mat roi2 = inputImage(Rect(1320,160,200,200));
+    rectangle(inputImage, Point(1320,160), Point(1520,360), Scalar(0,255,0), 2);
     
-    Point roiOrigin4 = Point(1420,700);
-    Mat roi4 = inputImage(Rect(1420,700,200,200));
-    rectangle(inputImage, Point(1420,700), Point(1620,900), Scalar(0,255,0), 2);
+    Point roiOrigin3 = Point(130,850);
+    Mat roi3 = inputImage(Rect(130,850,200,200));
+    rectangle(inputImage, Point(130,850), Point(330,1050), Scalar(0,255,0), 2);
+    
+    Point roiOrigin4 = Point(1320,850);
+    Mat roi4 = inputImage(Rect(1320,850,200,200));
+    rectangle(inputImage, Point(1320,850), Point(1520,1050), Scalar(0,255,0), 2);
 
     display(inputImage);
     detectMarkers(roi1, roiOrigin1);
@@ -106,13 +117,14 @@ int main(int argc, const char * argv[]){
     
     
     display(inputImage);
+    //it total 4 markers should be recognized, one for each corner
     
-    srcPoints.push_back(Point(markers[0][0],markers[0][1]));
-    srcPoints.push_back(Point(markers[1][0],markers[1][1]));
-    srcPoints.push_back(Point(markers[2][0],markers[2][1]));
-    srcPoints.push_back(Point(markers[3][0],markers[3][1]));
     
-    if(srcPoints.size()==4){
+    if(markers.size()==4){
+      srcPoints.push_back(Point(markers[0][0],markers[0][1]));
+      srcPoints.push_back(Point(markers[1][0],markers[1][1]));
+      srcPoints.push_back(Point(markers[2][0],markers[2][1]));
+      srcPoints.push_back(Point(markers[3][0],markers[3][1]));
       Mat H = findHomography(Mat(srcPoints), Mat(dstPoints), CV_RANSAC);
       warpPerspective(inputImage, inputImage, H, inputImage.size() );
     }
@@ -120,7 +132,12 @@ int main(int argc, const char * argv[]){
     rectangle(inputImage, p1, p4, Scalar(255,100,0), 2);
 
     display(inputImage);
-    
+
+    resize(inputImage, inputImage, Size(810,540), 0, 0, INTER_LINEAR);
+    //resize(input, blub, Size(800,600), 0, 0, INTER_LINEAR);
+    imshow("My Image", inputImage);
+    //waitKey();
+
     //Mat result(gray.size(), CV_8U, Scalar(255));
     //drawContours(result, contours, -1, Scalar(0),2);
     
@@ -138,14 +155,24 @@ int main(int argc, const char * argv[]){
     //}
     //imshow("My Image", channels[2]);
 
-  }
+  //}
 }
 
 void detectMarkers(Mat roi, Point origin){
     Mat gray;
     cvtColor(roi, gray, CV_BGR2GRAY);
     GaussianBlur(gray, gray, Size(3,3), 1.5);
-    threshold(gray, gray, 200, 255, THRESH_BINARY);
+    adaptiveThreshold(gray, gray, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 55, 2);
+    
+    dilate(gray, gray, Mat());
+
+    erode(gray,gray,Mat());    
+    erode(gray,gray,Mat());    
+    dilate(gray, gray, Mat());
+    dilate(gray, gray, Mat());
+    erode(gray,gray,Mat());
+    dilate(gray, gray, Mat());
+    
     //Canny(gray, gray, 100, 200, 3);
     display(gray);
     std::vector<Vec3f> circles;
@@ -161,6 +188,12 @@ void detectMarkers(Mat roi, Point origin){
       //cout << "("<<circles[i][0]<<"," << circles[i][1] << ") r=" <<circles[i][2] << endl;
     }
     //here we add the best detected circle (index 0) to the main list of markers (which should contain 4 in the end)
+    
+    if(circles.size()<1){
+      std::cout << "No marker detected for this corner!" << endl;
+      return;
+    }
+    
     Vec3f marker;
     marker[0] = circles[0][0]+origin.x;
     marker[1] = circles[0][1]+origin.y;
@@ -170,6 +203,7 @@ void detectMarkers(Mat roi, Point origin){
 }
 
 void display(Mat input){
+  //return;
   Mat src;
   input.copyTo(src);
   Mat blub;
