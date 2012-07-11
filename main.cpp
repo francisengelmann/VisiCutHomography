@@ -3,7 +3,7 @@
 //  VisiCutHomography
 //
 //  Created by Francis Engelmann on 6/8/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 FabLab Aachen. All rights reserved.
 //
 
 #include <iostream>
@@ -12,6 +12,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/nonfree/features2d.hpp> 
+
+/**
+ * The default input image is named "input.jpg" and must be located in the same directory as this program 
+ * Uncomment the following line if you prefer to grab a frame from the camera
+ * this is sometimes tricky when multiple cameras are connected since you cannot explicitly specify the input camera in opencv
+ */
+//#define GRAB_FROM_CAMERA
+
+/* Uncomment the following line for debugging */
+//#define DEBUG
+//#define DEBUG_LOOP
 
 using namespace cv;
 using namespace std;
@@ -22,8 +33,12 @@ void detectMarkers(Mat input, Point origin);
 std::vector<Vec3f> markers;
 
 int main(int argc, const char * argv[]){
-  //std::cout << getBuildInformation();
+  #ifdef DEBUG
+  std::cout << getBuildInformation();
+  #endif
+  #ifdef GRAB_FROM_CAMERA
   VideoCapture cap(0);
+  #endif
   Mat inputImage;
   Mat gray;
   Mat gray2;
@@ -35,6 +50,7 @@ int main(int argc, const char * argv[]){
   std::vector<Point2f> srcPoints;
   std::vector<Point2f> dstPoints;
   
+  //this is the size of the output rectanlge i.e. the points where the detected markers will be matched to
   float x = 150;
   float y = 180;
   float width = 63*20;
@@ -48,20 +64,27 @@ int main(int argc, const char * argv[]){
   dstPoints.push_back(p1);
   dstPoints.push_back(p4);
   dstPoints.push_back(p3);  
-  
+
+#ifdef DEBUG_LOOP
   for(;;){
+#endif
     srcPoints.clear();
     markers.clear();
-    cap >> inputImage;
-    //inputImage = imread("photo3.jpg");
-    flip(inputImage, inputImage, 1);
+    
+    #ifdef GRAB_FROM_CAMERA
+      cap >> inputImage; //uncomment this when you want to grab the picture directly from a webcam
+    #else
+      inputImage = imread("input.jpg");
+    #endif
+    
     if(!inputImage.data){
-      std::cout << "No image read from camera! Is it connected/available? Exiting." << std::endl;
+      std::cout << "No image read! Is 'input.jpg' available or a camera connected? Exiting." << std::endl;
       exit(0);
     }else{
-      std::cout << inputImage.size().width << "x" << inputImage.size().height << std::endl;
+      std::cout << "Input image size is "<<inputImage.size().width << "x" << inputImage.size().height << std::endl;
     }
-    
+
+    flip(inputImage, inputImage, 1);
     //resize the camera image to the expected size
     //if smaller image is provided by lets say an unexpected webcam,
     //it would crash when trying to access pixels from out of range
@@ -70,21 +93,24 @@ int main(int argc, const char * argv[]){
       resize(inputImage, inputImage, Size(1620,1080), 0, 0, INTER_LINEAR);
     }
     
-    Point roiOrigin1 = Point(100,160);
-    Mat roi1 = inputImage(Rect(100,160,200,200));
-    rectangle(inputImage, Point(100,160), Point(300,360), Scalar(0,255,0), 2);
+    Point roiOrigin1 = Point(30,80);
+    Mat roi1 = inputImage(Rect(roiOrigin1.x,roiOrigin1.y,200,200));
     
-    Point roiOrigin2 = Point(1320,160);
-    Mat roi2 = inputImage(Rect(1320,160,200,200));
-    rectangle(inputImage, Point(1320,160), Point(1520,360), Scalar(0,255,0), 2);
+    Point roiOrigin2 = Point(1420,70);
+    Mat roi2 = inputImage(Rect(roiOrigin2.x,roiOrigin2.y,200,200));
     
-    Point roiOrigin3 = Point(130,850);
-    Mat roi3 = inputImage(Rect(130,850,200,200));
-    rectangle(inputImage, Point(130,850), Point(330,1050), Scalar(0,255,0), 2);
-    
-    Point roiOrigin4 = Point(1320,850);
-    Mat roi4 = inputImage(Rect(1320,850,200,200));
-    rectangle(inputImage, Point(1320,850), Point(1520,1050), Scalar(0,255,0), 2);
+    Point roiOrigin3 = Point(50,700);
+    Mat roi3 = inputImage(Rect(roiOrigin3.x,roiOrigin3.y,200,200));
+
+    Point roiOrigin4 = Point(1420,650);
+    Mat roi4 = inputImage(Rect(roiOrigin4.x,roiOrigin4.y,200,200));
+
+    #ifdef DEBUG
+    rectangle(inputImage, roiOrigin1, Point(roiOrigin1.x+200,roiOrigin1.y+200), Scalar(0,255,0), 2);
+    rectangle(inputImage, roiOrigin2, Point(roiOrigin2.x+200,roiOrigin2.y+200), Scalar(0,255,0), 2);
+    rectangle(inputImage, roiOrigin3, Point(roiOrigin3.x+200,roiOrigin3.y+200), Scalar(0,255,0), 2);
+    rectangle(inputImage, roiOrigin4, Point(roiOrigin4.x+200,roiOrigin4.y+200), Scalar(0,255,0), 2);
+    #endif
 
     display(inputImage);
     detectMarkers(roi1, roiOrigin1);
@@ -129,13 +155,16 @@ int main(int argc, const char * argv[]){
       warpPerspective(inputImage, inputImage, H, inputImage.size() );
     }
 
+    #ifdef DEBUG
     rectangle(inputImage, p1, p4, Scalar(255,100,0), 2);
+    #endif
 
     display(inputImage);
 
-    resize(inputImage, inputImage, Size(810,540), 0, 0, INTER_LINEAR);
+    //resize(inputImage, inputImage, Size(810,540), 0, 0, INTER_LINEAR);
     //resize(input, blub, Size(800,600), 0, 0, INTER_LINEAR);
-    imshow("My Image", inputImage);
+    //imshow("My Image", inputImage);
+    
     //waitKey();
 
     //Mat result(gray.size(), CV_8U, Scalar(255));
@@ -154,8 +183,12 @@ int main(int argc, const char * argv[]){
     //  circle(inputImage, Point2f(circles[i][0] ,circles[i][1]), 3, CV_RGB(255,0,0), 2, 8, 0);
     //}
     //imshow("My Image", channels[2]);
-
+  #ifdef DEBUG_LOOP
   }
+  #endif
+  Mat outputImage = inputImage(Rect(p1.x,p1.y, p4.x-p1.x, p4.y-p1.y));
+  display(outputImage);
+  imwrite("output.jpg", outputImage);
 }
 
 void detectMarkers(Mat roi, Point origin){
@@ -203,7 +236,9 @@ void detectMarkers(Mat roi, Point origin){
 }
 
 void display(Mat input){
-  //return;
+  #ifndef DEBUG
+  return;
+  #endif
   Mat src;
   input.copyTo(src);
   Mat blub;
@@ -212,6 +247,13 @@ void display(Mat input){
   imshow("My Image", blub);
   waitKey(0);
 }
+
+/**************************************************************************************************************
+ * the remaining of this file is just old stuff not used anymore
+ **************************************************************************************************************
+ **************************************************************************************************************
+ **************************************************************************************************************
+ **/
 
 int main2(int argc, const char * argv[]){
   std::cout << getBuildInformation();
