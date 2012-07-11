@@ -155,7 +155,7 @@ int main(int argc, const char * argv[]){
     //}
     //imshow("My Image", channels[2]);
 
-  //}
+  }
 }
 
 void detectMarkers(Mat roi, Point origin){
