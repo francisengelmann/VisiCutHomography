@@ -21,7 +21,7 @@
 //#define GRAB_FROM_CAMERA
 
 /* Uncomment the following line for debugging */
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_LOOP
 
 using namespace cv;
@@ -93,16 +93,16 @@ int main(int argc, const char * argv[]){
       resize(inputImage, inputImage, Size(1620,1080), 0, 0, INTER_LINEAR);
     }
     
-    Point roiOrigin1 = Point(30,80);
+    Point roiOrigin1 = Point(50,80);
     Mat roi1 = inputImage(Rect(roiOrigin1.x,roiOrigin1.y,200,200));
     
-    Point roiOrigin2 = Point(1420,70);
+    Point roiOrigin2 = Point(1280,80);
     Mat roi2 = inputImage(Rect(roiOrigin2.x,roiOrigin2.y,200,200));
     
-    Point roiOrigin3 = Point(50,700);
+    Point roiOrigin3 = Point(50,800);
     Mat roi3 = inputImage(Rect(roiOrigin3.x,roiOrigin3.y,200,200));
 
-    Point roiOrigin4 = Point(1420,650);
+    Point roiOrigin4 = Point(1280,800);
     Mat roi4 = inputImage(Rect(roiOrigin4.x,roiOrigin4.y,200,200));
 
     #ifdef DEBUG
